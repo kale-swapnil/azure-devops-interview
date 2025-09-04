@@ -1,0 +1,4 @@
+trigger:
+  branches:
+    include:
+      - feature1   # or the branch you want
