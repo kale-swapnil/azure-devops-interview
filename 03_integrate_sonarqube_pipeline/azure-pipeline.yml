@@ -1,0 +1,52 @@
+# ASP.NET
+# Build and test ASP.NET projects.
+
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-2019'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+# SonarQube: Begin Analysis
+- task: SonarCloudPrepare@3
+  displayName: 'Prepare SonarQube Analysis'
+  inputs:
+    SonarQube: 'SonarQube'
+    organization: 'cloudsxp'
+    scannerMode: 'dotnet'
+    projectKey: 'cloudsxp_PartsUnlimited'
+    extraProperties: |
+      sonar.exclusions=**/Migrations/**
+
+# NuGet tool installer
+- task: NuGetToolInstaller@0
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '$(solution)'
+
+
+# Build the solution with MSBuild (SonarQube collects data during this step)
+- task: VSBuild@1
+  inputs:
+      solution: '$(solution)'
+      msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+      
+
+# SonarQube: Run Analysis
+- task: SonarCloudAnalyze@3
+  displayName: 'Run SonarQube Analysis'
+
+# SonarQube: Publish Results
+- task: SonarCloudPublish@3
+  displayName: 'Publish SonarQube Results'
+  inputs:
+    pollingTimeoutSec: '300'
