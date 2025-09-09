@@ -1,0 +1,49 @@
+trigger:
+- main
+
+variables:
+  # 1. Regular secret variable (defined in UI or variable group)
+  # This should be marked as "Keep this value secret" in the Azure DevOps UI
+  secretVar: $(mySecretVar)
+
+  # 2. Reference a variable group (includes secret variables)
+  - group: MySecretsGroup
+
+  # 3. Reference Azure Key Vault secrets via linked variable group
+  - group: KeyVaultSecrets
+
+stages:
+- stage: BuildAndSecretsDemo
+  jobs:
+  - job: DemoSecrets
+    displayName: 'Demo All Secret Methods'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    ## 1. Using a Secure Pipeline Variable
+    - script: |
+        echo "Using secure pipeline variable"
+        echo "Secret variable is masked: $(secretVar)"
+      displayName: 'Use secret pipeline variable'
+
+    ## 2. Using Secret from Variable Group
+    - script: |
+        echo "Using secret from variable group"
+        echo "API Key (masked): $(apiKeyFromGroup)"
+      displayName: 'Use variable group secret'
+
+    ## 3. Using Azure Key Vault Secret (linked via variable group)
+    - script: |
+        echo "Using Azure Key Vault secret"
+        echo "Key Vault Secret (masked): $(kvSecretFromKeyVault)"
+      displayName: 'Use Azure Key Vault secret'
+
+
+
+    ## 4. Safe Logging Practice
+    - script: |
+        echo "✅ All secrets used securely!"
+        echo "❌ DO NOT do this: echo '$(secretVar)'"  # Example of what NOT to do
+      displayName: 'Log masking and warnings'
